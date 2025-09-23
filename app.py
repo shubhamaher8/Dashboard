@@ -11,9 +11,9 @@ US_GRID_CO2_FACTOR = 0.4  # kg CO₂ per kWh (approx. US average)
 # NEW: Model-specific energy factors for more realistic comparisons.
 # These are illustrative values. Flash/small models are more efficient.
 MODEL_ENERGY_FACTORS = {
-    "x-ai/grok-4-fast:free": 0.00045,          # Larger models use more energy
-    "openai/gpt-oss-120b:free": 0.00040,
-    "google/gemini-2.0-flash-exp:free": 0.00015, # Flash/distilled models are efficient
+    "x-ai/grok-4-fast:free": 0.00045,              # Larger models use more energy
+    "openai/gpt-oss-20b:free": 0.00040,
+    "google/gemma-3n-e4b-it:free": 0.00015,        # Flash/distilled models are efficient
     "meta-llama/llama-4-maverick:free": 0.00035,
     "default": 0.00030 # A default fallback value
 }
@@ -177,21 +177,27 @@ if not st.session_state["history"].empty:
         st.plotly_chart(fig_total, use_container_width=True)
 
     with c2:
-        # Tokens vs CO2 (Scatter Plot)
-        fig_corr = px.scatter(
-            df, x="total_tokens", y="co2_kg", color="model",
-            title="Tokens vs. CO₂ Emissions (by Model)",
+        # Tokens vs CO2 (Line + Scatter Plot) - Connect all points regardless of model
+        fig_corr = px.line(
+            df, x="total_tokens", y="co2_kg",
+            title="Tokens vs. CO₂ Emissions (All Models Connected)",
             labels={"total_tokens": "Total Tokens", "co2_kg": "CO₂ (kg)"},
+            markers=True,
             hover_data=['id', 'prompt']
         )
         st.plotly_chart(fig_corr, use_container_width=True)
         st.markdown("---")
 
-        # Input vs Output tokens (Bar Chart)
+        # Input vs Output tokens (Bar Chart) - Only for latest prompt
+        latest_tokens_df = pd.DataFrame({
+            "Token Type": ["Input Tokens", "Output Tokens"],
+            "Count": [latest["input_tokens"], latest["output_tokens"]]
+        })
         fig_tokens = px.bar(
-            df, x="id", y=["input_tokens", "output_tokens"],
-            title="Input vs. Output Tokens per Query",
-            labels={"value": "Tokens", "id": "Query ID"}, barmode='group'
+            latest_tokens_df, x="Token Type", y="Count",
+            title="Input vs. Output Tokens (Current Prompt)",
+            labels={"Count": "Tokens", "Token Type": "Type"},
+            text="Count"
         )
         st.plotly_chart(fig_tokens, use_container_width=True)
 

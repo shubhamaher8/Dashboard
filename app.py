@@ -8,14 +8,12 @@ import plotly.express as px
 # ----------------------------
 US_GRID_CO2_FACTOR = 0.4  # kg CO₂ per kWh (approx. US average)
 
-# NEW: Model-specific energy factors for more realistic comparisons.
-# These are illustrative values. Flash/small models are more efficient.
 MODEL_ENERGY_FACTORS = {
     "x-ai/grok-4-fast:free": 0.00045,              # Larger models use more energy
     "openai/gpt-oss-20b:free": 0.00040,
     "google/gemma-3n-e4b-it:free": 0.00015,        # Flash/distilled models are efficient
     "meta-llama/llama-4-maverick:free": 0.00035,
-    "default": 0.00030 # A default fallback value
+    "default": 0.00030                             # A default fallback value
 }
 
 # ----------------------------
@@ -180,7 +178,7 @@ if not st.session_state["history"].empty:
         # Tokens vs CO2 (Line + Scatter Plot) - Connect all points regardless of model
         fig_corr = px.line(
             df, x="total_tokens", y="co2_kg",
-            title="Tokens vs. CO₂ Emissions (All Models Connected)",
+            title="Tokens vs. CO₂ Emissions",
             labels={"total_tokens": "Total Tokens", "co2_kg": "CO₂ (kg)"},
             markers=True,
             hover_data=['id', 'prompt']

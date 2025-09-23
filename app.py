@@ -170,6 +170,7 @@ if not st.session_state["history"].empty:
         # CO₂ by Model (Pie Chart)
         fig_pie = px.pie(df, names="model", values="co2_kg", title="Total CO₂ Share by Model", hole=.3)
         st.plotly_chart(fig_pie, use_container_width=True)
+        st.markdown("---")
         
         # Total tokens trend (Line Chart)
         fig_total = px.line(df, x="id", y="total_tokens", color="model", title="Total Tokens Over Queries", markers=True)
@@ -184,6 +185,7 @@ if not st.session_state["history"].empty:
             hover_data=['id', 'prompt']
         )
         st.plotly_chart(fig_corr, use_container_width=True)
+        st.markdown("---")
 
         # Input vs Output tokens (Bar Chart)
         fig_tokens = px.bar(

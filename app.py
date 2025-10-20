@@ -9,11 +9,14 @@ import plotly.express as px
 US_GRID_CO2_FACTOR = 0.4  # kg CO₂ per kWh (approx. US average)
 
 MODEL_ENERGY_FACTORS = {
-    "x-ai/grok-4-fast:free": 0.00045,              # Larger models use more energy
-    "openai/gpt-oss-20b:free": 0.00040,
-    "google/gemma-3n-e4b-it:free": 0.00015,        # Flash/distilled models are efficient
-    "meta-llama/llama-4-maverick:free": 0.00035,
-    "default": 0.00030                             # A default fallback value
+    "deepseek/deepseek-r1-distill-llama-70b:free": 8.5,
+    "openai/gpt-oss-20b:free": 2.71,
+    "google/gemma-3n-e4b-it:free": 0.95,
+    "meta-llama/llama-4-maverick:free": 6.2,
+    "mistralai/mistral-small-24b-instruct-2501:free": 3.8,
+    "qwen/qwen3-14b:free": 2.2,
+    "meta-llama/llama-4-scout:free": 2.5,
+    "default": 2.56  # Add a default value
 }
 
 # ----------------------------
@@ -32,12 +35,12 @@ model = st.sidebar.selectbox(
     list(MODEL_ENERGY_FACTORS.keys())[:-1] # Exclude 'default' from selector
 )
 
-# Initialize session state history DataFrame
+# Update DataFrame columns
 if "history" not in st.session_state:
     st.session_state["history"] = pd.DataFrame(
         columns=[
             "id", "model", "prompt", "input_tokens", "output_tokens",
-            "total_tokens", "energy_kWh", "co2_kg", "response"
+            "total_tokens", "energy_Wh", "co2_g", "response"
         ]
     )
 
@@ -72,8 +75,8 @@ def call_openrouter_api(model, prompt, api_key):
 
 def calculate_energy_co2(tokens, model_name):
     """Calculate energy and CO2 based on token count and the specific model used."""
-    energy_per_1k_tokens = MODEL_ENERGY_FACTORS.get(model_name, MODEL_ENERGY_FACTORS["default"])
-    energy = (tokens / 1000) * energy_per_1k_tokens
+    energy_per_1k_tokens_wh = MODEL_ENERGY_FACTORS.get(model_name, MODEL_ENERGY_FACTORS["default"])
+    energy = (tokens / 1000) * energy_per_1k_tokens_wh
     co2 = energy * US_GRID_CO2_FACTOR
     return energy, co2
 
@@ -91,8 +94,7 @@ if st.button("Generate & Analyze"):
             response_text, in_tokens, out_tokens, total_tokens = call_openrouter_api(model, prompt, api_key)
 
             if total_tokens > 0:
-                # UPDATED: Pass the model name to the calculation function
-                energy_kWh, co2_kg = calculate_energy_co2(total_tokens, model)
+                energy_Wh, co2_g = calculate_energy_co2(total_tokens, model)
 
                 # Store new entry in history
                 new_entry = pd.DataFrame([
@@ -103,8 +105,8 @@ if st.button("Generate & Analyze"):
                         "input_tokens": in_tokens,
                         "output_tokens": out_tokens,
                         "total_tokens": total_tokens,
-                        "energy_kWh": energy_kWh,
-                        "co2_kg": co2_kg,
+                        "energy_Wh": energy_Wh,
+                        "co2_g": co2_g,
                         "response": response_text,
                     }
                 ])
@@ -128,21 +130,21 @@ if not st.session_state["history"].empty:
     col1.metric("Input Tokens", latest["input_tokens"])
     col2.metric("Output Tokens", latest["output_tokens"])
     col3.metric("Total Tokens", latest["total_tokens"])
-    col4.metric("Energy (kWh)", f"{latest['energy_kWh']:.6f}")
-    col5.metric("CO₂ (kg)", f"{latest['co2_kg']:.6f}")
+    col4.metric("Energy (Wh)", f"{latest['energy_Wh']:.2f}")
+    col5.metric("CO₂ (g)", f"{latest['co2_g']:.2f}")
 
     st.markdown("---")
 
     # NEW: Headline KPIs Section
     st.subheader("📊 Overall Dashboard Summary")
-    total_kwh = df['energy_kWh'].sum()
-    total_co2 = df['co2_kg'].sum()
+    total_wh = df['energy_Wh'].sum()
+    total_co2_g = df['co2_g'].sum()
     total_prompts = len(df)
     avg_tokens = df['total_tokens'].mean()
 
     kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-    kpi1.metric("Total Energy Consumed (kWh)", f"{total_kwh:.4f}")
-    kpi2.metric("Total CO₂ Emitted (kg)", f"{total_co2:.4f}")
+    kpi1.metric("Total Energy Consumed (Wh)", f"{total_wh:.2f}")
+    kpi2.metric("Total CO₂ Emitted (g)", f"{total_co2_g:.2f}")
     kpi3.metric("Total Prompts Processed", total_prompts)
     kpi4.metric("Avg. Tokens per Prompt", f"{avg_tokens:.0f}")
 
@@ -150,12 +152,12 @@ if not st.session_state["history"].empty:
 
     # NEW: Statistical Analysis Section
     st.subheader("🔬 Statistical Analysis")
-    avg_co2_prompt = df['co2_kg'].mean()
-    median_co2_prompt = df['co2_kg'].median()
+    avg_co2_prompt = df['co2_g'].mean()
+    median_co2_prompt = df['co2_g'].median()
 
     stat1, stat2 = st.columns(2)
-    stat1.metric("Average CO₂ per Prompt (kg)", f"{avg_co2_prompt:.6f}")
-    stat2.metric("Median CO₂ per Prompt (kg)", f"{median_co2_prompt:.6f}", help="The median is less sensitive to very large/small prompts and can represent a more 'typical' value.")
+    stat1.metric("Average CO₂ per Prompt (g)", f"{avg_co2_prompt:.2f}")
+    stat2.metric("Median CO₂ per Prompt (g)", f"{median_co2_prompt:.2f}", help="The median is less sensitive to very large/small prompts and can represent a more 'typical' value.")
 
     st.markdown("---")
 
@@ -166,21 +168,25 @@ if not st.session_state["history"].empty:
 
     with c1:
         # CO₂ by Model (Pie Chart)
-        fig_pie = px.pie(df, names="model", values="co2_kg", title="Total CO₂ Share by Model", hole=.3)
+        fig_pie = px.pie(df, names="model", values="co2_g", title="Total CO₂ Share by Model", hole=.3)
         st.plotly_chart(fig_pie, use_container_width=True)
         st.markdown("---")
         
-        # Total tokens trend (Line Chart)
-        fig_total = px.line(df, x="id", y="total_tokens", color="model", title="Total Tokens Over Queries", markers=True)
+        # Total tokens trend (Scatter Chart)
+        fig_total = px.scatter(
+            df, x="id", y="total_tokens", color="model", title="Total Tokens Over Queries",
+            labels={"id": "Query ID", "total_tokens": "Total Tokens"},
+            hover_data=['prompt']
+        )
+        fig_total.update_xaxes(tickmode='linear', dtick=1)
         st.plotly_chart(fig_total, use_container_width=True)
 
     with c2:
-        # Tokens vs CO2 (Line + Scatter Plot) - Connect all points regardless of model
-        fig_corr = px.line(
-            df, x="total_tokens", y="co2_kg",
+        # Tokens vs CO2 (Scatter Plot) - No lines between points
+        fig_corr = px.scatter(
+            df, x="total_tokens", y="co2_g",
             title="Tokens vs. CO₂ Emissions",
-            labels={"total_tokens": "Total Tokens", "co2_kg": "CO₂ (kg)"},
-            markers=True,
+            labels={"total_tokens": "Total Tokens", "co2_g": "CO₂ (g)"},
             hover_data=['id', 'prompt']
         )
         st.plotly_chart(fig_corr, use_container_width=True)
@@ -204,7 +210,7 @@ if not st.session_state["history"].empty:
     # History Table
     st.subheader("📖 Query History")
     # Define columns to show, excluding the long response text for clarity
-    display_cols = ["id", "model", "prompt", "input_tokens", "output_tokens", "total_tokens", "energy_kWh", "co2_kg"]
+    display_cols = ["id", "model", "prompt", "input_tokens", "output_tokens", "total_tokens", "energy_Wh", "co2_g"]
     st.dataframe(df[display_cols])
 
 else:

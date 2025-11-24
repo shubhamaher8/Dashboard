@@ -8,6 +8,8 @@
   <br>
 </div>
 
+---
+
 Measure, visualize, and compare the environmental footprint of LLM inference across different models — in real time. Gain insights into model efficiency, environmental impact, and make informed, greener choices for your AI workflows.
 
 

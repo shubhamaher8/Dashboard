@@ -58,24 +58,27 @@ The app calls OpenRouter’s chat completion API, reads token usage, and applies
 
 ### 🧮 Footprint calculations
 
-- Energy factor by model (kWh per 1K tokens)
-- US grid average emission factor: 0.4 kg CO₂ per kWh (configurable in code)
+- Energy factor by model (**Wh per 1K tokens**)
+- US grid average emission factor: **0.4 g CO₂ per Wh** (configurable in code)
 
 Formulas:
 
-- $E_{kWh} = \dfrac{\text{tokens}}{1000} \times \text{energyFactor(model)}$
-- $\text{CO₂}_{kg} = E_{kWh} \times 0.4$
+- $E_{Wh} = \dfrac{\text{tokens}}{1000} \times \text{energyFactor(model)}$
+- $\text{CO₂}_{g} = E_{Wh} \times 0.4$
 
 
 ### 📦 Model energy factors (defaults in code)
 
-| Model | kWh / 1K tokens |
-|---|---:|
-| x-ai/grok-4-fast:free | 0.00045 |
-| openai/gpt-oss-20b:free | 0.00040 |
-| google/gemma-3n-e4b-it:free | 0.00015 |
-| meta-llama/llama-4-maverick:free | 0.00035 |
-| default (fallback) | 0.00030 |
+| Model                                              | Wh / 1K tokens |
+|----------------------------------------------------|---------------:|
+| deepseek/deepseek-r1-distill-llama-70b:free        |         8.50   |
+| openai/gpt-oss-20b:free                            |         2.71   |
+| google/gemma-3n-e4b-it:free                        |         0.95   |
+| meta-llama/llama-4-maverick:free                   |         6.20   |
+| mistralai/mistral-small-24b-instruct-2501:free     |         3.80   |
+| qwen/qwen3-14b:free                                |         2.20   |
+| meta-llama/llama-4-scout:free                      |         2.50   |
+| default (fallback)                                 |         2.56   |
 
 > These are illustrative factors intended for relative comparison, not lifecycle‑accurate measurements.
 
@@ -158,4 +161,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📜 License
 
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License.

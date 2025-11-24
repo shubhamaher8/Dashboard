@@ -29,8 +29,8 @@ Measure, visualize, and compare the environmental footprint of LLM inference acr
       <b>Dashboard View</b>
     </td>
     <td align="center">
-      <img src="public/Demo2.png" alt="Homepage Screenshot" width="400" height="200"/><br/>
-      <b>Homepage View</b>
+      <img src="public/Demo2.png" alt="Analytics Screenshot" width="400" height="200"/><br/>
+      <b>Analytics View</b>
     </td>
   </tr>
 </table>
